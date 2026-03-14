@@ -1,0 +1,1902 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Vezérlőpult | Magyar Dashboard + AI (Adatmegőrzéssel)</title>
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- SortableJS -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', 'Segoe UI', Roboto, system-ui, sans-serif;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            min-height: 100vh;
+            color: #f0f0f0;
+            position: relative;
+            background: #0a0a0c;
+            font-weight: 300;
+            overflow-x: hidden;
+        }
+
+        .dashboard-container {
+            position: relative;
+            z-index: 1;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* === TITKOS ADMIN MENÜ (WER) === */
+        .admin-panel {
+            background: rgba(18, 18, 24, 0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 48px;
+            padding: 2.5rem;
+            margin-bottom: 2.5rem;
+            border: 1px solid rgba(187, 134, 252, 0.3);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(187, 134, 252, 0.2) inset;
+            transform-origin: top;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: none;
+        }
+
+        .admin-panel.visible {
+            display: block;
+            animation: slideDown 0.4s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .admin-header {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .admin-header i {
+            font-size: 2.5rem;
+            color: #bb86fc;
+            filter: drop-shadow(0 0 15px rgba(187, 134, 252, 0.5));
+        }
+
+        .admin-header h2 {
+            font-size: 2rem;
+            font-weight: 400;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #ffffff, #bb86fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .admin-tabs {
+            display: flex;
+            gap: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 1.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: rgba(44, 44, 56, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: #aaa;
+            padding: 0.8rem 2.2rem;
+            border-radius: 40px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            backdrop-filter: blur(4px);
+        }
+
+        .tab-btn:hover {
+            background: rgba(58, 58, 72, 0.8);
+            color: #fff;
+            border-color: rgba(187, 134, 252, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .tab-btn.active {
+            background: #bb86fc;
+            color: #0a0a0c;
+            border-color: #bb86fc;
+            font-weight: 600;
+            box-shadow: 0 5px 15px rgba(187, 134, 252, 0.4);
+        }
+
+        .tab-content {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .tab-content.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* === BEÁLLÍTÁSOK KÁRTYÁK === */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .setting-card {
+            background: rgba(28, 28, 36, 0.8);
+            backdrop-filter: blur(8px);
+            border-radius: 32px;
+            padding: 1.8rem;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .setting-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #bb86fc, #9d5bdc);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .setting-card:hover {
+            transform: translateY(-4px);
+            background: rgba(32, 32, 42, 0.9);
+            border-color: rgba(187, 134, 252, 0.2);
+        }
+
+        .setting-card:hover::before {
+            opacity: 1;
+        }
+
+        .setting-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .setting-header i {
+            font-size: 1.8rem;
+            color: #bb86fc;
+            background: rgba(187, 134, 252, 0.1);
+            padding: 0.8rem;
+            border-radius: 20px;
+        }
+
+        .setting-header h3 {
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .setting-description {
+            color: #aaa;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .toggle-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 56px;
+            height: 30px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #2c2c38;
+            transition: .3s;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 24px;
+            width: 24px;
+            left: 3px;
+            bottom: 2px;
+            background: #aaa;
+            transition: .3s;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        input:checked + .toggle-slider {
+            background: linear-gradient(135deg, #bb86fc, #9d5bdc);
+            border-color: #bb86fc;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+            background: white;
+            box-shadow: 0 2px 10px rgba(187, 134, 252, 0.5);
+        }
+
+        /* Modul hozzáadás szekció */
+        .add-module-section {
+            background: rgba(22, 22, 30, 0.6);
+            border-radius: 36px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .module-type-grid {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+
+        .module-type-btn {
+            background: rgba(44, 44, 56, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: #fff;
+            padding: 0.8rem 1.8rem;
+            border-radius: 40px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .module-type-btn:hover {
+            background: #bb86fc;
+            color: #0a0a0c;
+            transform: scale(1.02);
+        }
+
+        .module-type-btn.active {
+            background: #bb86fc;
+            color: #0a0a0c;
+            font-weight: 500;
+        }
+
+        .add-params {
+            background: rgba(18, 18, 24, 0.8);
+            border-radius: 28px;
+            padding: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #bbb;
+            font-size: 0.9rem;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            background: rgba(44, 44, 56, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            padding: 0.9rem 1.4rem;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #bb86fc, #9d5bdc);
+            border: none;
+            border-radius: 40px;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #0a0a0c;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.8rem;
+            justify-content: center;
+            width: 100%;
+            margin-top: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(187, 134, 252, 0.4);
+        }
+
+        /* === DASHBOARD ELEMEK === */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .greeting {
+            background: rgba(22, 22, 30, 0.8);
+            backdrop-filter: blur(8px);
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            font-size: 1.3rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .battery-info {
+            background: rgba(22, 22, 30, 0.8);
+            backdrop-filter: blur(8px);
+            padding: 0.8rem 1.8rem;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .battery-level {
+            width: 70px;
+            height: 32px;
+            border: 2px solid #bb86fc;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .battery-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50, #8bc34a);
+            transition: width 0.3s ease;
+        }
+
+        .hungarian-factor {
+            background: rgba(22, 22, 30, 0.8);
+            backdrop-filter: blur(8px);
+            border-radius: 50px;
+            padding: 1.2rem 2.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .quick-links {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .quick-link {
+            background: rgba(22, 22, 30, 0.8);
+            backdrop-filter: blur(8px);
+            width: 55px;
+            height: 55px;
+            border-radius: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            color: #f0f0f0;
+            text-decoration: none;
+            transition: all 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .quick-link:hover {
+            background: #bb86fc;
+            color: #0a0a0c;
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .search-container {
+            margin-bottom: 2rem;
+        }
+
+        .search-box {
+            background: rgba(22, 22, 30, 0.8);
+            backdrop-filter: blur(8px);
+            border-radius: 60px;
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .search-box input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 1rem 1.5rem;
+            font-size: 1.1rem;
+            color: white;
+            outline: none;
+        }
+
+        .search-box button {
+            background: #bb86fc;
+            border: none;
+            border-radius: 40px;
+            padding: 0.8rem 2rem;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #0a0a0c;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .search-box button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(187, 134, 252, 0.4);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 1.8rem;
+            min-height: 300px;
+            flex: 1;
+        }
+
+        .module-card {
+            background: rgba(22, 22, 30, 0.9);
+            backdrop-filter: blur(8px);
+            border-radius: 32px;
+            padding: 1.8rem;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            transition: all 0.3s;
+        }
+
+        .module-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(187, 134, 252, 0.3);
+            box-shadow: 0 20px 30px -10px rgba(187, 134, 252, 0.2);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 1rem;
+        }
+
+        .card-header h3 {
+            font-size: 1.2rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-header h3 i {
+            color: #bb86fc;
+        }
+
+        .card-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .card-controls button {
+            background: rgba(44, 44, 56, 0.6);
+            border: none;
+            color: #aaa;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .card-controls button:hover {
+            background: rgba(187, 134, 252, 0.2);
+            color: #bb86fc;
+        }
+
+        /* Modul specifikus stílusok */
+        .google-search {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .google-search input {
+            flex: 1;
+            background: rgba(44, 44, 56, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            padding: 0.8rem 1.2rem;
+            color: white;
+        }
+
+        .google-search button {
+            background: #bb86fc;
+            border: none;
+            border-radius: 30px;
+            width: 50px;
+            color: #0a0a0c;
+            cursor: pointer;
+        }
+
+        .todo-list {
+            list-style: none;
+            margin-top: 1rem;
+        }
+
+        .todo-list li {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .todo-list li input[type="checkbox"] {
+            accent-color: #bb86fc;
+        }
+
+        .todo-list li.completed span {
+            text-decoration: line-through;
+            color: #777;
+        }
+
+        .delete-todo {
+            color: #ff6b6b;
+            margin-left: auto;
+            cursor: pointer;
+        }
+
+        .news-list {
+            list-style: none;
+        }
+
+        .news-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .news-list a {
+            color: #f0f0f0;
+            text-decoration: none;
+        }
+
+        .news-list a:hover {
+            color: #bb86fc;
+        }
+
+        .weather-content {
+            text-align: center;
+        }
+
+        .weather-main {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .temp-now {
+            font-size: 2.5rem;
+            font-weight: 300;
+        }
+
+        .forecast {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        .forecast-day {
+            background: rgba(44, 44, 56, 0.6);
+            padding: 0.5rem;
+            border-radius: 20px;
+            text-align: center;
+            flex: 1;
+        }
+
+        .empty-dashboard {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 5rem;
+            background: rgba(22, 22, 30, 0.6);
+            backdrop-filter: blur(8px);
+            border-radius: 48px;
+            color: #aaa;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .system-footer {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #aaa;
+            font-size: 0.9rem;
+            background: rgba(22, 22, 30, 0.6);
+            backdrop-filter: blur(8px);
+            padding: 1rem 2rem;
+            border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        /* === AI ASSZISZTENS (JOBB ALSÓ SAROK) === */
+        .ai-assistant {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 9999;
+        }
+
+        .ai-button {
+            width: 70px;
+            height: 70px;
+            border-radius: 35px;
+            background: linear-gradient(135deg, #bb86fc, #9d5bdc);
+            border: none;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(187, 134, 252, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(187, 134, 252, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(187, 134, 252, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(187, 134, 252, 0); }
+        }
+
+        .ai-button:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 15px 40px rgba(187, 134, 252, 0.8);
+        }
+
+        .ai-chat {
+            position: absolute;
+            bottom: 90px;
+            right: 0;
+            width: 380px;
+            background: rgba(22, 22, 30, 0.98);
+            backdrop-filter: blur(15px);
+            border-radius: 32px;
+            padding: 1.5rem;
+            border: 1px solid rgba(187, 134, 252, 0.3);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+            display: none;
+        }
+
+        .ai-chat.open {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .ai-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .ai-header h3 {
+            font-size: 1.3rem;
+            font-weight: 400;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .ai-header h3 i {
+            color: #bb86fc;
+        }
+
+        .close-ai {
+            background: rgba(44, 44, 56, 0.8);
+            border: none;
+            color: #aaa;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .close-ai:hover {
+            background: #ff4d4d;
+            color: white;
+        }
+
+        .chat-messages {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .message {
+            padding: 0.8rem 1.2rem;
+            border-radius: 20px;
+            max-width: 85%;
+            line-height: 1.5;
+            font-size: 0.95rem;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .user-message {
+            background: linear-gradient(135deg, #bb86fc20, #9d5bdc20);
+            border: 1px solid #bb86fc40;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+            color: #fff;
+        }
+
+        .ai-message {
+            background: rgba(44, 44, 56, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-right: auto;
+            border-bottom-left-radius: 4px;
+            color: #ddd;
+        }
+
+        .ai-input-area {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .ai-input-area input {
+            flex: 1;
+            background: rgba(44, 44, 56, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            padding: 0.8rem 1.2rem;
+            color: white;
+            font-size: 0.95rem;
+        }
+
+        .ai-input-area button {
+            background: #bb86fc;
+            border: none;
+            border-radius: 30px;
+            width: 50px;
+            color: #0a0a0c;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .ai-input-area button:hover {
+            transform: scale(1.05);
+        }
+
+        .ai-suggestions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .ai-suggestion {
+            background: rgba(44, 44, 56, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 30px;
+            padding: 0.4rem 1rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            color: #ccc;
+            transition: all 0.2s;
+        }
+
+        .ai-suggestion:hover {
+            background: #bb86fc20;
+            color: #bb86fc;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 0.3rem;
+            padding: 0.8rem 1.2rem;
+            background: rgba(44, 44, 56, 0.8);
+            border-radius: 20px;
+            margin-right: auto;
+            max-width: 60px;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: #bb86fc;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-8px); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- TITKOS ADMIN MENÜ (WER) -->
+        <div class="admin-panel" id="adminPanel">
+            <div class="admin-header">
+                <i class="fas fa-crown"></i>
+                <h2>Admin Vezérlőpult</h2>
+            </div>
+            
+            <div class="admin-tabs">
+                <button class="tab-btn active" data-tab="settingsTab">⚙️ Beállítások</button>
+                <button class="tab-btn" data-tab="addTab">➕ Modulok</button>
+            </div>
+
+            <!-- BEÁLLÍTÁSOK TAB -->
+            <div class="tab-content active" id="settingsTab">
+                <div class="settings-grid">
+                    <!-- Dinamikus köszöntés -->
+                    <div class="setting-card">
+                        <div class="setting-header">
+                            <i class="fas fa-sun"></i>
+                            <h3>Dinamikus köszöntés</h3>
+                        </div>
+                        <div class="setting-description">
+                            Napszaknak megfelelő üdvözlés a felső sávban
+                        </div>
+                        <div class="toggle-wrapper">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="toggleGreeting">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Magyar faktor -->
+                    <div class="setting-card">
+                        <div class="setting-header">
+                            <i class="fas fa-calendar-day"></i>
+                            <h3>Magyar faktor</h3>
+                        </div>
+                        <div class="setting-description">
+                            Névnap és napi bölcsesség megjelenítése
+                        </div>
+                        <div class="toggle-wrapper">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="toggleHungarian">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Gyorselérés -->
+                    <div class="setting-card">
+                        <div class="setting-header">
+                            <i class="fas fa-rocket"></i>
+                            <h3>Gyorselérés</h3>
+                        </div>
+                        <div class="setting-description">
+                            Közösségi média ikonok gyors eléréshez
+                        </div>
+                        <div class="toggle-wrapper">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="toggleQuickLinks">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Keresőmező -->
+                    <div class="setting-card">
+                        <div class="setting-header">
+                            <i class="fas fa-search"></i>
+                            <h3>Szupergyors kereső</h3>
+                        </div>
+                        <div class="setting-description">
+                            Google keresőmező a dashboard tetején
+                        </div>
+                        <div class="toggle-wrapper">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="toggleSearch">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Akkumulátor -->
+                    <div class="setting-card">
+                        <div class="setting-header">
+                            <i class="fas fa-battery-half"></i>
+                            <h3>Akkumulátor</h3>
+                        </div>
+                        <div class="setting-description">
+                            Akkumulátor szint kijelzés a felső sávban
+                        </div>
+                        <div class="toggle-wrapper">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="toggleBattery">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Rendszerinfó -->
+                    <div class="setting-card">
+                        <div class="setting-header">
+                            <i class="fas fa-microchip"></i>
+                            <h3>Rendszerinfó</h3>
+                        </div>
+                        <div class="setting-description">
+                            Memória, processzor és pontos idő
+                        </div>
+                        <div class="toggle-wrapper">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="toggleSystem">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- AI Asszisztens -->
+                    <div class="setting-card">
+                        <div class="setting-header">
+                            <i class="fas fa-robot"></i>
+                            <h3>AI Asszisztens</h3>
+                        </div>
+                        <div class="setting-description">
+                            Intelligens chatbot a jobb alsó sarokban
+                        </div>
+                        <div class="toggle-wrapper">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="toggleAI" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODULOK HOZZÁADÁSA TAB -->
+            <div class="tab-content" id="addTab">
+                <div class="add-module-section">
+                    <div class="module-type-grid">
+                        <button class="module-type-btn active" data-type="search"><i class="fab fa-google"></i> Google</button>
+                        <button class="module-type-btn" data-type="quote"><i class="fas fa-quote-right"></i> Idézet</button>
+                        <button class="module-type-btn" data-type="todo"><i class="fas fa-check"></i> To-Do</button>
+                        <button class="module-type-btn" data-type="news"><i class="fas fa-newspaper"></i> Hírek</button>
+                        <button class="module-type-btn" data-type="weather"><i class="fas fa-cloud-sun"></i> Időjárás</button>
+                        <button class="module-type-btn" data-type="calendar"><i class="fas fa-calendar"></i> Naptár</button>
+                        <button class="module-type-btn" data-type="button"><i class="fas fa-bolt"></i> Gomb</button>
+                    </div>
+
+                    <div class="add-params" id="addParams">
+                        <div class="form-group">
+                            <label>Modul címe</label>
+                            <input type="text" id="moduleTitle" value="Modul" placeholder="Add meg a modul nevét">
+                        </div>
+                        <div id="dynamicParams"></div>
+                        <button class="submit-btn" id="addModuleBtn"><i class="fas fa-plus"></i> Modul hozzáadása</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DASHBOARD - KEZDETBEN TELJESEN ÜRES -->
+        <div class="dashboard-grid" id="dashboardGrid">
+            <div class="empty-dashboard">
+                <i class="fas fa-cubes" style="font-size: 4rem; color: #bb86fc; margin-bottom: 1rem;"></i>
+                <p style="font-size: 1.3rem; margin-bottom: 0.5rem;">A dashboard jelenleg üres</p>
+                <p style="color: #777;">Nyomd meg a W+E+R billentyűket az admin menü megnyitásához és kapcsold be a kívánt funkciókat</p>
+            </div>
+        </div>
+
+        <!-- RENDSZERINFO - KEZDETBEN REJTETT -->
+        <div class="system-footer" id="systemFooter" style="display: none;">
+            <span><i class="fas fa-memory"></i> Memória: ~450MB</span>
+            <span><i class="fas fa-microchip"></i> Processzor: 2.4GHz</span>
+            <span><i class="fas fa-clock"></i> <span id="currentTime">--:--:--</span></span>
+        </div>
+    </div>
+
+    <!-- AI ASSZISZTENS (JOBB ALSÓ SAROK) -->
+    <div class="ai-assistant" id="aiAssistant">
+        <div class="ai-chat" id="aiChat">
+            <div class="ai-header">
+                <h3><i class="fas fa-robot"></i> AI Asszisztens</h3>
+                <button class="close-ai" onclick="toggleAIChat()"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="chat-messages" id="aiMessages">
+                <div class="message ai-message">
+                    Szia! 👋 Hogyan segíthetek? Kérdezhetek időjárást, kereshetek a Google-on, beállíthatok emlékeztetőt, vagy viccet is mondhatok.
+                </div>
+            </div>
+            
+            <div class="typing-indicator" id="aiTyping" style="display: none;">
+                <span></span><span></span><span></span>
+            </div>
+            
+            <div class="ai-input-area">
+                <input type="text" id="aiInput" placeholder="Írd ide a kérdésed..." onkeypress="if(event.key==='Enter') sendAIMessage()">
+                <button onclick="sendAIMessage()"><i class="fas fa-paper-plane"></i></button>
+            </div>
+            
+            <div class="ai-suggestions">
+                <span class="ai-suggestion" onclick="quickAIPrompt('Időjárás Budapesten')">🌤️ Időjárás</span>
+                <span class="ai-suggestion" onclick="quickAIPrompt('Mondj egy viccet')">😂 Vicc</span>
+                <span class="ai-suggestion" onclick="quickAIPrompt('Mi a mai dátum?')">📅 Dátum</span>
+                <span class="ai-suggestion" onclick="quickAIPrompt('Keresés: mesterséges intelligencia')">🔍 Keresés</span>
+            </div>
+        </div>
+        
+        <button class="ai-button" id="aiButton" onclick="toggleAIChat()">
+            <i class="fas fa-robot"></i>
+        </button>
+    </div>
+
+    <script>
+        (function() {
+            // === TITKOS ADMIN MENÜ (WER) ===
+            const adminPanel = document.getElementById('adminPanel');
+            const keySequence = [];
+            const secretCode = ['w', 'e', 'r'];
+
+            document.addEventListener('keydown', (e) => {
+                const key = e.key.toLowerCase();
+                keySequence.push(key);
+                if (keySequence.length > secretCode.length) keySequence.shift();
+                if (keySequence.length === secretCode.length && keySequence.every((k, i) => k === secretCode[i])) {
+                    adminPanel.classList.toggle('visible');
+                    keySequence.length = 0;
+                }
+            });
+
+            // Tabok kezelése
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    document.getElementById(btn.dataset.tab).classList.add('active');
+                });
+            });
+
+            const grid = document.getElementById('dashboardGrid');
+            let sortable = null;
+
+            // === LOCALSTORAGE KEZELÉS ===
+            const STORAGE_KEYS = {
+                MODULES: 'dashboard_modules',
+                SETTINGS: 'dashboard_settings',
+                TODOS: 'dashboard_todos_'
+            };
+
+            // Modulok betöltése
+            function loadModules() {
+                const saved = localStorage.getItem(STORAGE_KEYS.MODULES);
+                return saved ? JSON.parse(saved) : [];
+            }
+
+            // Modulok mentése
+            function saveModules(modules) {
+                localStorage.setItem(STORAGE_KEYS.MODULES, JSON.stringify(modules));
+            }
+
+            // Beállítások betöltése
+            function loadSettings() {
+                const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+                return saved ? JSON.parse(saved) : {
+                    greeting: false,
+                    hungarian: false,
+                    quickLinks: false,
+                    search: false,
+                    battery: false,
+                    system: false,
+                    ai: true
+                };
+            }
+
+            // Beállítások mentése
+            function saveSettings(settings) {
+                localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+            }
+
+            // To-Do betöltése
+            function loadTodos(moduleId) {
+                const saved = localStorage.getItem(STORAGE_KEYS.TODOS + moduleId);
+                return saved ? JSON.parse(saved) : [];
+            }
+
+            // To-Do mentése
+            function saveTodos(moduleId, todos) {
+                localStorage.setItem(STORAGE_KEYS.TODOS + moduleId, JSON.stringify(todos));
+            }
+
+            // === BEÁLLÍTÁSOK ALKALMAZÁSA ===
+            function applySettings(settings) {
+                document.getElementById('toggleGreeting').checked = settings.greeting;
+                document.getElementById('toggleHungarian').checked = settings.hungarian;
+                document.getElementById('toggleQuickLinks').checked = settings.quickLinks;
+                document.getElementById('toggleSearch').checked = settings.search;
+                document.getElementById('toggleBattery').checked = settings.battery;
+                document.getElementById('toggleSystem').checked = settings.system;
+                document.getElementById('toggleAI').checked = settings.ai;
+            }
+
+            // Beállítások figyelése
+            function setupSettingsListeners() {
+                document.getElementById('toggleGreeting').addEventListener('change', () => {
+                    const settings = loadSettings();
+                    settings.greeting = document.getElementById('toggleGreeting').checked;
+                    saveSettings(settings);
+                    updateDashboard();
+                });
+                
+                document.getElementById('toggleHungarian').addEventListener('change', () => {
+                    const settings = loadSettings();
+                    settings.hungarian = document.getElementById('toggleHungarian').checked;
+                    saveSettings(settings);
+                    updateDashboard();
+                });
+                
+                document.getElementById('toggleQuickLinks').addEventListener('change', () => {
+                    const settings = loadSettings();
+                    settings.quickLinks = document.getElementById('toggleQuickLinks').checked;
+                    saveSettings(settings);
+                    updateDashboard();
+                });
+                
+                document.getElementById('toggleSearch').addEventListener('change', () => {
+                    const settings = loadSettings();
+                    settings.search = document.getElementById('toggleSearch').checked;
+                    saveSettings(settings);
+                    updateDashboard();
+                });
+                
+                document.getElementById('toggleBattery').addEventListener('change', () => {
+                    const settings = loadSettings();
+                    settings.battery = document.getElementById('toggleBattery').checked;
+                    saveSettings(settings);
+                    updateDashboard();
+                });
+                
+                document.getElementById('toggleSystem').addEventListener('change', () => {
+                    const settings = loadSettings();
+                    settings.system = document.getElementById('toggleSystem').checked;
+                    saveSettings(settings);
+                    updateDashboard();
+                });
+                
+                document.getElementById('toggleAI').addEventListener('change', () => {
+                    const settings = loadSettings();
+                    settings.ai = document.getElementById('toggleAI').checked;
+                    saveSettings(settings);
+                    updateDashboard();
+                });
+            }
+
+            // === DASHBOARD BETÖLTÉSE ===
+            async function loadDashboard() {
+                const modules = loadModules();
+                
+                if (modules.length === 0) {
+                    grid.innerHTML = '<div class="empty-dashboard"><i class="fas fa-cubes" style="font-size: 4rem; color: #bb86fc; margin-bottom: 1rem;"></i><p style="font-size: 1.3rem; margin-bottom: 0.5rem;">A dashboard jelenleg üres</p><p style="color: #777;">Nyomd meg a W+E+R billentyűket az admin menü megnyitásához és kapcsold be a kívánt funkciókat</p></div>';
+                    sortable = new Sortable(grid, {
+                        animation: 200,
+                        handle: '.card-header',
+                        ghostClass: 'sortable-ghost',
+                        disabled: true
+                    });
+                    return;
+                }
+
+                // Eltávolítjuk az üres üzenetet
+                grid.innerHTML = '';
+                
+                // Modulok megjelenítése
+                for (const moduleData of modules) {
+                    await renderModule(moduleData);
+                }
+                
+                // Sortable inicializálása
+                sortable = new Sortable(grid, {
+                    animation: 200,
+                    handle: '.card-header',
+                    ghostClass: 'sortable-ghost',
+                    onEnd: function() {
+                        // Új sorrend mentése
+                        const newModules = [];
+                        document.querySelectorAll('.module-card').forEach(card => {
+                            const moduleId = card.getAttribute('data-id');
+                            const moduleData = modules.find(m => m.id === moduleId);
+                            if (moduleData) {
+                                newModules.push(moduleData);
+                            }
+                        });
+                        saveModules(newModules);
+                    }
+                });
+            }
+
+            // Modul megjelenítése
+            async function renderModule(moduleData) {
+                const moduleDiv = document.createElement('div');
+                moduleDiv.className = 'module-card size-small';
+                moduleDiv.setAttribute('data-id', moduleData.id);
+                moduleDiv.setAttribute('data-type', moduleData.type);
+
+                let moduleHtml = '';
+
+                if (moduleData.type === 'search') {
+                    moduleHtml = `
+                        <div class="card-header">
+                            <h3><i class="fab fa-google"></i> ${moduleData.title}</h3>
+                            <div class="card-controls">
+                                <button class="resize-btn" onclick="changeSize(this)"><i class="fas fa-expand"></i></button>
+                                <button onclick="deleteModule(this)"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div class="google-search">
+                            <input type="text" id="googleInput_${moduleData.id}" placeholder="${moduleData.placeholder || 'Keress bármire...'}" value="${moduleData.lastSearch || ''}">
+                            <button onclick="performGoogleSearch('${moduleData.id}')"><i class="fas fa-search"></i></button>
+                        </div>
+                    `;
+                } else if (moduleData.type === 'quote') {
+                    const category = moduleData.category || 'motivation';
+                    const quoteList = quotes[category];
+                    const randomQuote = quoteList[Math.floor(Math.random() * quoteList.length)];
+                    moduleHtml = `
+                        <div class="card-header">
+                            <h3><i class="fas fa-quote-right"></i> ${moduleData.title}</h3>
+                            <div class="card-controls">
+                                <button class="resize-btn" onclick="changeSize(this)"><i class="fas fa-expand"></i></button>
+                                <button onclick="deleteModule(this)"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div style="text-align:center; padding:1rem;">
+                            <p style="font-style:italic;">"${randomQuote.text}"</p>
+                            <p style="color:#bb86fc; margin-top:0.5rem;">- ${randomQuote.author}</p>
+                        </div>
+                    `;
+                } else if (moduleData.type === 'todo') {
+                    moduleHtml = `
+                        <div class="card-header">
+                            <h3><i class="fas fa-check"></i> ${moduleData.title}</h3>
+                            <div class="card-controls">
+                                <button class="resize-btn" onclick="changeSize(this)"><i class="fas fa-expand"></i></button>
+                                <button onclick="deleteModule(this)"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div class="todo-input" style="display:flex; gap:0.5rem;">
+                            <input type="text" id="newTodo_${moduleData.id}" placeholder="Új teendő..." style="flex:1; background:rgba(44,44,56,0.8); border:1px solid rgba(255,255,255,0.1); border-radius:30px; padding:0.8rem 1.2rem; color:white;">
+                            <button onclick="addTodo('${moduleData.id}')" style="background:#bb86fc; border:none; border-radius:30px; width:50px; color:#0a0a0c; cursor:pointer;">+</button>
+                        </div>
+                        <ul class="todo-list" id="todoList_${moduleData.id}"></ul>
+                    `;
+                } else if (moduleData.type === 'news') {
+                    moduleHtml = `
+                        <div class="card-header">
+                            <h3><i class="fas fa-newspaper"></i> ${moduleData.title}</h3>
+                            <div class="card-controls">
+                                <button class="resize-btn" onclick="changeSize(this)"><i class="fas fa-expand"></i></button>
+                                <button onclick="deleteModule(this)"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div class="news-list" id="newsList_${moduleData.id}">
+                            <div style="text-align:center; color:#aaa;">Hírek betöltése...</div>
+                        </div>
+                    `;
+                } else if (moduleData.type === 'weather') {
+                    moduleHtml = `
+                        <div class="card-header">
+                            <h3><i class="fas fa-cloud-sun"></i> ${moduleData.title}</h3>
+                            <div class="card-controls">
+                                <button class="resize-btn" onclick="changeSize(this)"><i class="fas fa-expand"></i></button>
+                                <button onclick="deleteModule(this)"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div class="weather-content" id="weather_${moduleData.id}">
+                            <div style="text-align:center; color:#aaa;">Időjárás lekérése...</div>
+                        </div>
+                    `;
+                } else if (moduleData.type === 'calendar') {
+                    const daysLeft = Math.ceil((new Date(moduleData.eventDate) - new Date()) / (1000*60*60*24));
+                    moduleHtml = `
+                        <div class="card-header">
+                            <h3><i class="fas fa-calendar"></i> ${moduleData.title}</h3>
+                            <div class="card-controls">
+                                <button class="resize-btn" onclick="changeSize(this)"><i class="fas fa-expand"></i></button>
+                                <button onclick="deleteModule(this)"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div style="text-align:center;">
+                            <p><strong>${moduleData.eventName}</strong></p>
+                            <p>${new Date(moduleData.eventDate).toLocaleDateString('hu-HU')}</p>
+                            <p style="background:#2c2c38; padding:0.3rem 1rem; border-radius:30px; display:inline-block;">
+                                ${daysLeft >= 0 ? `${daysLeft} nap múlva` : 'Lejárt'}
+                            </p>
+                        </div>
+                    `;
+                } else if (moduleData.type === 'button') {
+                    moduleHtml = `
+                        <div class="card-header">
+                            <h3><i class="fas fa-bolt"></i> ${moduleData.title}</h3>
+                            <div class="card-controls">
+                                <button class="resize-btn" onclick="changeSize(this)"><i class="fas fa-expand"></i></button>
+                                <button onclick="deleteModule(this)"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <a href="${moduleData.link}" target="_blank" style="display:block; background:#bb86fc; color:#0a0a0c; text-decoration:none; padding:1rem; border-radius:30px; text-align:center; font-weight:600;">
+                            ${moduleData.btnText}
+                        </a>
+                    `;
+                }
+
+                moduleDiv.innerHTML = moduleHtml;
+                grid.appendChild(moduleDiv);
+
+                // Specifikus funkciók
+                if (moduleData.type === 'todo') {
+                    renderTodos(moduleData.id);
+                } else if (moduleData.type === 'news') {
+                    const source = moduleData.source || 'telex';
+                    const news = await fetchNews(source);
+                    const newsList = document.getElementById(`newsList_${moduleData.id}`);
+                    if (newsList) {
+                        newsList.innerHTML = news.map(item => 
+                            `<li><a href="${item.url}" target="_blank">${item.title}</a></li>`
+                        ).join('');
+                    }
+                } else if (moduleData.type === 'weather') {
+                    setTimeout(() => {
+                        const weatherDiv = document.getElementById(`weather_${moduleData.id}`);
+                        const temp = moduleData.temperature || Math.floor(Math.random() * 15) + 15;
+                        if (weatherDiv) {
+                            weatherDiv.innerHTML = `
+                                <div class="weather-main">
+                                    <div class="temp-now">${temp}°<small>C</small></div>
+                                    <div><i class="fas fa-sun" style="color:#f9d71c; font-size:2.5rem;"></i></div>
+                                </div>
+                                <div class="forecast">
+                                    <div class="forecast-day"><div>Ma</div><div>${temp}°</div></div>
+                                    <div class="forecast-day"><div>Holnap</div><div>${temp+2}°</div></div>
+                                </div>
+                            `;
+                        }
+                    }, 500);
+                }
+            }
+
+            // === DINAMIKUS ELEMEK LÉTREHOZÁSA ===
+            function createGreeting() {
+                const greeting = document.createElement('div');
+                greeting.id = 'dynamicGreeting';
+                greeting.className = 'greeting';
+                
+                const hour = new Date().getHours();
+                let message = '';
+                let icon = '';
+
+                if (hour >= 5 && hour < 12) {
+                    message = 'Jó reggelt! Kávé megvolt már? ☕';
+                    icon = 'fa-sun';
+                } else if (hour >= 12 && hour < 18) {
+                    message = 'Jó napot! Délutáni energia? ⚡';
+                    icon = 'fa-cloud-sun';
+                } else {
+                    message = 'Itt az idő a lazításnak! 🌙';
+                    icon = 'fa-moon';
+                }
+
+                greeting.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+                return greeting;
+            }
+
+            function createHungarianFactor() {
+                const hungarian = document.createElement('div');
+                hungarian.id = 'dynamicHungarian';
+                hungarian.className = 'hungarian-factor';
+                
+                const namedays = {
+                    '01-01': 'Újév',
+                    '03-15': 'Nemzeti ünnep',
+                    '08-20': 'István',
+                    '10-23': 'Nemzeti ünnep',
+                    '12-06': 'Mikulás',
+                    '12-24': 'Szenteste',
+                    '12-25': 'Karácsony'
+                };
+                
+                const today = new Date();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                const key = `${month}-${day}`;
+                const nameday = namedays[key] || 'Gábor, Róbert, Dániel';
+                
+                const wisdoms = [
+                    "Aki keres, az talál.",
+                    "Lassan járj, tovább érsz!",
+                    "Többet ésszel, mint erővel.",
+                    "Ki korán kel, aranyat lel."
+                ];
+                
+                hungarian.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:1rem;">
+                        <i class="fas fa-calendar-day" style="color:#bb86fc; font-size:1.5rem;"></i>
+                        <div style="font-size:1.2rem;">Mai névnap: ${nameday}</div>
+                    </div>
+                    <div style="color:#ddd; font-style:italic;">"${wisdoms[Math.floor(Math.random() * wisdoms.length)]}"</div>
+                `;
+                return hungarian;
+            }
+
+            function createQuickLinks() {
+                const links = document.createElement('div');
+                links.id = 'dynamicQuickLinks';
+                links.className = 'quick-links';
+                
+                const socials = [
+                    { icon: 'fa-facebook-messenger', url: 'https://messenger.com' },
+                    { icon: 'fa-instagram', url: 'https://instagram.com' },
+                    { icon: 'fa-whatsapp', url: 'https://web.whatsapp.com' },
+                    { icon: 'fa-reddit-alien', url: 'https://reddit.com' },
+                    { icon: 'fa-youtube', url: 'https://youtube.com' },
+                    { icon: 'fa-telegram', url: 'https://t.me' },
+                    { icon: 'fa-discord', url: 'https://discord.com' },
+                    { icon: 'fa-github', url: 'https://github.com' }
+                ];
+                
+                links.innerHTML = socials.map(s => 
+                    `<a href="${s.url}" target="_blank" class="quick-link"><i class="fab ${s.icon}"></i></a>`
+                ).join('');
+                
+                return links;
+            }
+
+            function createSearchBox() {
+                const search = document.createElement('div');
+                search.id = 'dynamicSearch';
+                search.className = 'search-container';
+                
+                search.innerHTML = `
+                    <div class="search-box">
+                        <i class="fas fa-search" style="color:#bb86fc; margin-left:1.5rem;"></i>
+                        <input type="text" id="globalSearch" placeholder="Keress bármire a Google-on...">
+                        <button onclick="performGlobalSearch()">Keresés</button>
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    const input = document.getElementById('globalSearch');
+                    if (input) {
+                        input.addEventListener('keypress', (e) => {
+                            if (e.key === 'Enter') performGlobalSearch();
+                        });
+                    }
+                }, 100);
+                
+                return search;
+            }
+
+            function createBattery() {
+                const battery = document.createElement('div');
+                battery.id = 'dynamicBattery';
+                battery.className = 'battery-info';
+                
+                const level = Math.floor(Math.random() * 30) + 60;
+                let icon = 'fa-battery-full';
+                if (level < 40) icon = 'fa-battery-quarter';
+                else if (level < 70) icon = 'fa-battery-half';
+                
+                battery.innerHTML = `
+                    <i class="fas ${icon}" style="color:#bb86fc;"></i>
+                    <div class="battery-level">
+                        <div class="battery-fill" style="width: ${level}%;"></div>
+                    </div>
+                    <span class="battery-percent" style="color:#bb86fc;">${level}%</span>
+                `;
+                
+                return battery;
+            }
+
+            // === BEÁLLÍTÁSOK KEZELÉSE ===
+            const container = document.querySelector('.dashboard-container');
+            
+            function updateDashboard() {
+                // Eltávolítjuk a dinamikus elemeket
+                document.getElementById('dynamicGreeting')?.remove();
+                document.getElementById('dynamicHungarian')?.remove();
+                document.getElementById('dynamicQuickLinks')?.remove();
+                document.getElementById('dynamicSearch')?.remove();
+                document.getElementById('dynamicBattery')?.remove();
+                
+                const settings = loadSettings();
+                
+                // Top bar létrehozása ha kell
+                let topBar = document.querySelector('.top-bar');
+                if (!topBar) {
+                    topBar = document.createElement('div');
+                    topBar.className = 'top-bar';
+                    container.insertBefore(topBar, document.querySelector('.dashboard-grid'));
+                }
+                topBar.innerHTML = '';
+                
+                // Elemek hozzáadása a beállítások alapján
+                if (settings.greeting) {
+                    topBar.appendChild(createGreeting());
+                }
+                
+                if (settings.battery) {
+                    topBar.appendChild(createBattery());
+                }
+                
+                // Magyar faktor (a top bar után)
+                if (settings.hungarian) {
+                    container.insertBefore(createHungarianFactor(), document.querySelector('.dashboard-grid'));
+                }
+                
+                // Gyorselérés
+                if (settings.quickLinks) {
+                    container.insertBefore(createQuickLinks(), document.querySelector('.dashboard-grid'));
+                }
+                
+                // Kereső
+                if (settings.search) {
+                    container.insertBefore(createSearchBox(), document.querySelector('.dashboard-grid'));
+                }
+                
+                // Rendszerinfó
+                document.getElementById('systemFooter').style.display = 
+                    settings.system ? 'flex' : 'none';
+                
+                // AI asszisztens
+                document.getElementById('aiAssistant').style.display = 
+                    settings.ai ? 'block' : 'none';
+            }
+
+            // === ADATOK A MODULOKHOZ ===
+            const quotes = {
+                motivation: [
+                    { text: "A siker nem véletlen, hanem kemény munka eredménye.", author: "Ismeretlen" },
+                    { text: "Hidd el, hogy képes vagy rá, és már félúton jársz.", author: "Theodore Roosevelt" }
+                ],
+                joke: [
+                    { text: "Miért nem eszik a programozó kenyeret? Mert már van neki bug-ja.", author: "Vicc" }
+                ],
+                fact: [
+                    { text: "A méhek képesek felismerni az emberi arcokat.", author: "Érdekesség" }
+                ]
+            };
+
+            function fetchNews(source) {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        const news = [
+                            { title: "Fontos változások a digitális oktatásban", source: "Telex", url: "#" },
+                            { title: "Jön a mesterséges intelligencia forradalma", source: "TechCrunch", url: "#" }
+                        ].filter(item => source === 'all' || item.source.toLowerCase() === source);
+                        resolve(news);
+                    }, 500);
+                });
+            }
+
+            // === MODULOK HOZZÁADÁSA ===
+            document.getElementById('addModuleBtn').addEventListener('click', async () => {
+                const title = document.getElementById('moduleTitle').value || 'Modul';
+                const moduleId = 'mod' + Date.now() + Math.random();
+
+                const modules = loadModules();
+                
+                const moduleData = {
+                    id: moduleId,
+                    type: currentType,
+                    title: title
+                };
+
+                if (currentType === 'search') {
+                    moduleData.placeholder = document.getElementById('searchPlaceholder')?.value || 'Keress bármire...';
+                } else if (currentType === 'quote') {
+                    moduleData.category = document.getElementById('quoteCategory')?.value || 'motivation';
+                } else if (currentType === 'todo') {
+                    const defaultTodos = document.getElementById('defaultTodos')?.value || '';
+                    const initialTodos = defaultTodos.split(',').map(t => ({ text: t.trim(), completed: false }));
+                    saveTodos(moduleId, initialTodos);
+                } else if (currentType === 'news') {
+                    moduleData.source = document.getElementById('newsSource')?.value || 'telex';
+                } else if (currentType === 'weather') {
+                    moduleData.city = document.getElementById('weatherCity')?.value || 'Budapest';
+                    moduleData.temperature = Math.floor(Math.random() * 15) + 15;
+                } else if (currentType === 'calendar') {
+                    moduleData.eventName = document.getElementById('eventName')?.value || 'Esemény';
+                    moduleData.eventDate = document.getElementById('eventDate')?.value;
+                } else if (currentType === 'button') {
+                    moduleData.btnText = document.getElementById('btnText')?.value || 'Gomb';
+                    moduleData.link = document.getElementById('btnLink')?.value || '#';
+                }
+
+                modules.push(moduleData);
+                saveModules(modules);
+
+                // Újratöltjük a dashboardot
+                await loadDashboard();
+                updateDashboard();
+            });
+
+            // === MODUL TÍPUS VÁLTÁS ===
+            let currentType = 'search';
+            
+            document.querySelectorAll('.module-type-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.module-type-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentType = btn.dataset.type;
+                    
+                    const dynamicDiv = document.getElementById('dynamicParams');
+                    const templates = {
+                        search: `<div class="form-group"><label>Kereső szöveg</label><input type="text" id="searchPlaceholder" value="Keress bármire..."></div>`,
+                        quote: `<div class="form-group"><label>Kategória</label><select id="quoteCategory"><option value="motivation">Motiváció</option><option value="joke">Vicc</option></select></div>`,
+                        todo: `<div class="form-group"><label>Alapértelmezett tennivalók</label><input type="text" id="defaultTodos" value="Vegyél tejet,Írd meg a jelentést"></div>`,
+                        news: `<div class="form-group"><label>Hírforrás</label><select id="newsSource"><option value="telex">Telex</option><option value="index">Index</option></select></div>`,
+                        weather: `<div class="form-group"><label>Város</label><input type="text" id="weatherCity" value="Budapest"></div>`,
+                        calendar: `<div class="form-group"><label>Esemény neve</label><input type="text" id="eventName" value="Születésnap"></div><div class="form-group"><label>Dátum</label><input type="date" id="eventDate" value="2025-12-31"></div>`,
+                        button: `<div class="form-group"><label>Gomb szövege</label><input type="text" id="btnText" value="YouTube Music"></div><div class="form-group"><label>Link</label><input type="url" id="btnLink" value="https://music.youtube.com"></div>`
+                    };
+                    dynamicDiv.innerHTML = templates[currentType] || '';
+                });
+            });
+
+            // === IDŐ FRISSÍTÉS ===
+            function updateTime() {
+                document.getElementById('currentTime').textContent = new Date().toLocaleTimeString('hu-HU');
+            }
+            updateTime();
+            setInterval(updateTime, 1000);
+
+            // === GLOBÁLIS KERESŐ ===
+            window.performGlobalSearch = function() {
+                const query = document.getElementById('globalSearch')?.value.trim();
+                if (query) {
+                    window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
+                }
+            };
+
+            // === MODUL FUNKCIÓK ===
+            window.performGoogleSearch = function(moduleId) {
+                const input = document.getElementById(`googleInput_${moduleId}`);
+                if (input.value.trim()) {
+                    window.open(`https://www.google.com/search?q=${encodeURIComponent(input.value.trim())}`, '_blank');
+                    
+                    // Mentjük az utolsó keresést
+                    const modules = loadModules();
+                    const moduleIndex = modules.findIndex(m => m.id === moduleId);
+                    if (moduleIndex !== -1) {
+                        modules[moduleIndex].lastSearch = input.value.trim();
+                        saveModules(modules);
+                    }
+                }
+            };
+
+            window.addTodo = function(moduleId) {
+                const input = document.getElementById(`newTodo_${moduleId}`);
+                if (!input.value.trim()) return;
+                
+                const todos = loadTodos(moduleId);
+                todos.push({ text: input.value.trim(), completed: false });
+                saveTodos(moduleId, todos);
+                renderTodos(moduleId);
+                input.value = '';
+            };
+
+            window.toggleTodo = function(moduleId, index) {
+                const todos = loadTodos(moduleId);
+                todos[index].completed = !todos[index].completed;
+                saveTodos(moduleId, todos);
+                renderTodos(moduleId);
+            };
+
+            window.deleteTodo = function(moduleId, index) {
+                const todos = loadTodos(moduleId);
+                todos.splice(index, 1);
+                saveTodos(moduleId, todos);
+                renderTodos(moduleId);
+            };
+
+            function renderTodos(moduleId) {
+                const list = document.getElementById(`todoList_${moduleId}`);
+                const todos = loadTodos(moduleId);
+                
+                if (!list) return;
+                
+                if (todos.length === 0) {
+                    list.innerHTML = '<li style="text-align:center;">Nincsenek teendők</li>';
+                    return;
+                }
+                
+                list.innerHTML = todos.map((todo, index) => `
+                    <li class="${todo.completed ? 'completed' : ''}">
+                        <input type="checkbox" ${todo.completed ? 'checked' : ''} onchange="toggleTodo('${moduleId}', ${index})">
+                        <span>${todo.text}</span>
+                        <i class="fas fa-trash delete-todo" onclick="deleteTodo('${moduleId}', ${index})"></i>
+                    </li>
+                `).join('');
+            }
+
+            window.deleteModule = async (btn) => {
+                const card = btn.closest('.module-card');
+                const moduleId = card.getAttribute('data-id');
+                
+                const modules = loadModules();
+                const filteredModules = modules.filter(m => m.id !== moduleId);
+                saveModules(filteredModules);
+                
+                await loadDashboard();
+                updateDashboard();
+            };
+
+            window.changeSize = (btn) => {
+                const c = btn.closest('.module-card');
+                if (c.classList.contains('size-small')) {
+                    c.classList.remove('size-small');
+                    c.classList.add('size-medium');
+                } else if (c.classList.contains('size-medium')) {
+                    c.classList.remove('size-medium');
+                    c.classList.add('size-large');
+                } else {
+                    c.classList.remove('size-large');
+                    c.classList.add('size-small');
+                }
+            };
+
+            // === AI ASSZISZTENS FUNKCIÓK ===
+            window.toggleAIChat = function() {
+                const chat = document.getElementById('aiChat');
+                const button = document.getElementById('aiButton');
+                chat.classList.toggle('open');
+                if (chat.classList.contains('open')) {
+                    button.style.display = 'none';
+                } else {
+                    button.style.display = 'flex';
+                }
+            };
+
+            window.sendAIMessage = function() {
+                const input = document.getElementById('aiInput');
+                const message = input.value.trim();
+                if (!message) return;
+                
+                addAIMessage(message, 'user');
+                input.value = '';
+                
+                document.getElementById('aiTyping').style.display = 'flex';
+                
+                setTimeout(() => {
+                    document.getElementById('aiTyping').style.display = 'none';
+                    const response = generateAIResponse(message);
+                    addAIMessage(response, 'ai');
+                }, 1000);
+            };
+
+            window.quickAIPrompt = function(prompt) {
+                document.getElementById('aiInput').value = prompt;
+                sendAIMessage();
+            };
+
+            function addAIMessage(text, sender) {
+                const messages = document.getElementById('aiMessages');
+                const msgDiv = document.createElement('div');
+                msgDiv.className = `message ${sender}-message`;
+                msgDiv.textContent = text;
+                messages.appendChild(msgDiv);
+                messages.scrollTop = messages.scrollHeight;
+            }
+
+            function generateAIResponse(message) {
+                const msg = message.toLowerCase();
+                
+                if (msg.includes('időjárás') || msg.includes('timejárás')) {
+                    return "🌤️ Budapesten jelenleg 21°C van, napos idő. Holnap 23°C várható, gyenge széllel.";
+                } else if (msg.includes('vicc') || msg.includes('mondj egy viccet')) {
+                    return "😂 Miért nem eszik a programozó kenyeret? Mert már van neki bug-ja!";
+                } else if (msg.includes('dátum') || msg.includes('mai nap')) {
+                    return `📅 Ma ${new Date().toLocaleDateString('hu-HU', { year: 'numeric', month: 'long', day: 'numeric' })} van.`;
+                } else if (msg.includes('keres') || msg.includes('keress')) {
+                    const searchTerm = msg.replace('keres', '').replace('keress', '').replace(':', '').trim();
+                    if (searchTerm) {
+                        window.open(`https://www.google.com/search?q=${encodeURIComponent(searchTerm)}`, '_blank');
+                        return `🔍 Keresés a Google-on: "${searchTerm}" - megnyitottam egy új lapon.`;
+                    }
+                } else if (msg.includes('segítség') || msg.includes('help')) {
+                    return "🤖 Parancsok: időjárás, vicc, dátum, keresés: [kifejezés]";
+                }
+                
+                return "🤖 Nem teljesen értem a kérdést. Próbáld: 'Időjárás Budapest', 'Mondj egy viccet', 'Mi a mai dátum?'";
+            }
+
+            // === INICIALIZÁLÁS ===
+            (async function init() {
+                // Beállítások betöltése
+                const settings = loadSettings();
+                applySettings(settings);
+                setupSettingsListeners();
+                
+                // Dashboard betöltése
+                await loadDashboard();
+                
+                // Dashboard frissítése a beállítások alapján
+                updateDashboard();
+            })();
+        })();
+    </script>
+</body>
+</html>
